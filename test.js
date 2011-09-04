@@ -1,5 +1,14 @@
 (function() {
-  var Being, Player, all_units, background, canvas_height, canvas_width, construct_units, ctx_bg, ctx_e, ctx_p, enemyLayer, enemy_color, enemy_speed, find_spot, movePlayer, num_units, player, playerLayer, player_color, player_speed, start, unit_radius;
+  var Being, Enemy, Player, all_units, background, canvas_height, canvas_width, construct_units, ctx_bg, ctx_e, ctx_p, enemyLayer, enemy_color, enemy_speed, find_spot, num_units, playerLayer, player_color, player_speed, root, start, unit_radius;
+  var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+    for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
+    function ctor() { this.constructor = child; }
+    ctor.prototype = parent.prototype;
+    child.prototype = new ctor;
+    child.__super__ = parent.prototype;
+    return child;
+  };
+  root = typeof exports !== "undefined" && exports !== null ? exports : this;
   background = document.getElementById("layer1");
   enemyLayer = document.getElementById("layer2");
   playerLayer = document.getElementById("layer3");
@@ -10,7 +19,7 @@
   player_color = "blue";
   canvas_width = 300;
   canvas_height = 300;
-  num_units = 15;
+  num_units = 4;
   unit_radius = 5;
   all_units = [];
   ctx_bg = background.getContext("2d");
@@ -74,56 +83,28 @@
     };
     return Player;
   })();
-  player = new Player(25, 25);
-  player.animate();
-  movePlayer = function(e) {
-    var x, y;
-    e.preventDefault();
-    if (e.pageX !== void 0 && e.pageY !== void 0) {
-      x = e.pageX;
-      y = e.pageY;
-    } else {
-      x = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
-      y = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
-    }
-    x -= playerLayer.offsetLeft;
-    y -= playerLayer.offsetTop;
-    console.log('click: x:' + x + ', y:' + y);
-    player.next_x = x;
-    return player.next_y = y;
-  };
-  playerLayer.addEventListener("contextmenu", movePlayer, false);
   Being = (function() {
-    function Being(x, y, ctx, next_x, next_y, frame, color) {
+    function Being(x, y, speed) {
       this.x = x;
       this.y = y;
-      this.ctx = ctx;
-      this.next_x = next_x != null ? next_x : this.x;
-      this.next_y = next_y != null ? next_y : this.y;
-      this.frame = frame != null ? frame : 0;
-      this.color = color != null ? color : 'red';
+      this.speed = speed != null ? speed : 2;
+      this.next_x = this.x;
+      this.next_y = this.y;
+      this.frame = 0;
     }
-    Being.prototype.animate = function() {
-      var self;
-      console.log('animating');
-      self = this;
-      return setInterval(function() {
-        return self.move();
-      }, 50);
-    };
     Being.prototype.move = function() {
       var delta_x, delta_y, distance, theta, x_inc, y_inc;
       delta_y = this.y - this.next_y;
       delta_x = this.x - this.next_x;
       distance = Math.sqrt(delta_y * delta_y + delta_x * delta_x);
       if (distance !== 0) {
-        if (enemy_speed > distance) {
+        if (this.speed > distance) {
           this.x = this.next_x;
           return this.y = this.next_y;
         } else {
           theta = Math.acos((this.next_x - this.x) / distance);
-          x_inc = enemy_speed * Math.cos(theta);
-          y_inc = enemy_speed * Math.sin(theta);
+          x_inc = this.speed * Math.cos(theta);
+          y_inc = this.speed * Math.sin(theta);
           this.x += x_inc;
           if (this.next_y > this.y) {
             return this.y += y_inc;
@@ -135,14 +116,24 @@
     };
     return Being;
   })();
+  root.player = new Being(55, 59, 4);
+  Enemy = (function() {
+    __extends(Enemy, Being);
+    function Enemy() {
+      Enemy.__super__.constructor.apply(this, arguments);
+    }
+    Enemy.prototype.move = function() {
+      this.next_x = root.player.x;
+      this.next_y = root.player.y;
+      return Enemy.__super__.move.apply(this, arguments);
+    };
+    return Enemy;
+  })();
   find_spot = function() {
     var count, delta, delta_x, delta_y, generate_spot, spot, unit, x, y, _i, _len;
     console.log('finding spot');
     generate_spot = function() {
-      var x, y;
-      x = Math.random() * 300;
-      y = Math.random() * 300;
-      return [x, y];
+      return [Math.random() * 300, Math.random() * 300];
     };
     x = 0;
     y = 0;
@@ -169,36 +160,56 @@
       if (count === all_units.length) {
         console.log('leaving while');
         break;
-      } else {
-
       }
     }
     return [x, y];
   };
   construct_units = function() {
-    var draw_beings, frame, i, radius, spot, unit;
+    var draw_beings, frame, i, movePlayer, radius, spot, unit;
     for (i = 1; 1 <= num_units ? i <= num_units : i >= num_units; 1 <= num_units ? i++ : i--) {
       spot = find_spot();
-      unit = new Being(spot[0], spot[1], ctx_e);
-      unit.animate();
+      unit = new Enemy(spot[0], spot[1]);
       all_units.push(unit);
     }
     frame = 0;
     radius = 5;
     ctx_e.fillStyle = enemy_color;
+    movePlayer = function(e) {
+      var x, y;
+      e.preventDefault();
+      if (e.pageX !== void 0 && e.pageY !== void 0) {
+        x = e.pageX;
+        y = e.pageY;
+      } else {
+        x = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+        y = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+      }
+      x -= playerLayer.offsetLeft;
+      y -= playerLayer.offsetTop;
+      console.log('click: x:' + x + ', y:' + y);
+      root.player.next_x = x;
+      return root.player.next_y = y;
+    };
+    playerLayer.addEventListener("contextmenu", movePlayer, false);
     draw_beings = function() {
-      var unit, _i, _len, _results;
+      var unit, _i, _len;
       ctx_e.clearRect(0, 0, canvas_width, canvas_height);
       frame += 1;
-      _results = [];
       for (_i = 0, _len = all_units.length; _i < _len; _i++) {
         unit = all_units[_i];
+        unit.move();
         ctx_e.beginPath();
         ctx_e.arc(unit.x, unit.y, radius, 0, Math.PI * 2, true);
         ctx_e.closePath();
-        _results.push(ctx_e.fill());
+        ctx_e.fill();
       }
-      return _results;
+      root.player.move();
+      ctx_p.clearRect(0, 0, canvas_width, canvas_height);
+      ctx_p.fillStyle = player_color;
+      ctx_p.beginPath();
+      ctx_p.arc(root.player.x, root.player.y, radius, 0, Math.PI * 2, true);
+      ctx_p.closePath();
+      return ctx_p.fill();
     };
     return setInterval(draw_beings, 50);
   };
