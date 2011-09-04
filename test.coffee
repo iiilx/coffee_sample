@@ -14,7 +14,7 @@ player_color = "blue"
 canvas_width = 300
 canvas_height = 300
 
-num_units = 15 
+num_units = 5 
 unit_radius = 5
 
 all_units=[]
@@ -160,10 +160,9 @@ construct_units = ->
             #register unit into all buckets it's in
             #calculate the corners of each unit and then calculate which buckets eachunit is in
             #set buckets[bucket_id].push(unit)  {1:[unit1, unit4], 2:[unit2, unit5], 3:[unit3]}
-            #
         for unit in all_units
-            nearby_buckets = get_buckets(unit)
-            
+            for i in unit.buckets
+                check_collision(unit, i)
             unit.move() #finds next x and y coordinates for the unit
             ctx_e.beginPath()
             ctx_e.arc(unit.x, unit.y, radius, 0, Math.PI*2, true)
@@ -176,11 +175,23 @@ construct_units = ->
         ctx_p.arc(root.player.x, root.player.y, radius, 0, Math.PI*2, true)
         ctx_p.closePath()
         ctx_p.fill()
-    setInterval(draw_beings, 100)
+    setInterval(draw_beings, 500)
 
 num_buckets_across = 4
 num_buckets = num_buckets_across * num_buckets_across
 bucket_width = canvas_width / num_buckets_across
+
+check_collision = (unit, i) ->
+    other_units = root.buckets[i.toString()]
+    for other in other_units
+        distance = check_distance(unit, other)
+        if distance < 2 * unit_radius
+            console.log('collision!')
+
+check_distance = (unit1, unit2) ->
+    delta_x = unit1.x - unit2.x
+    delta_y = unit1.y - unit2.y
+    return Math.sqrt(delta_x * delta_x + delta_y * delta_y)
 
 update_buckets = ->
     root.buckets = {}

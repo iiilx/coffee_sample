@@ -1,5 +1,5 @@
 (function() {
-  var Being, Enemy, Player, all_units, background, bucket_width, canvas_height, canvas_width, construct_units, ctx_bg, ctx_e, ctx_p, enemyLayer, enemy_color, enemy_speed, find_spot, get_buckets, num_buckets, num_buckets_across, num_units, playerLayer, player_color, player_speed, register, root, start, unit_radius, update_buckets;
+  var Being, Enemy, Player, all_units, background, bucket_width, canvas_height, canvas_width, check_collision, check_distance, construct_units, ctx_bg, ctx_e, ctx_p, enemyLayer, enemy_color, enemy_speed, find_spot, get_buckets, num_buckets, num_buckets_across, num_units, playerLayer, player_color, player_speed, register, root, start, unit_radius, update_buckets;
   var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
     for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
     function ctor() { this.constructor = child; }
@@ -24,7 +24,7 @@
   player_color = "blue";
   canvas_width = 300;
   canvas_height = 300;
-  num_units = 15;
+  num_units = 5;
   unit_radius = 5;
   all_units = [];
   ctx_bg = background.getContext("2d");
@@ -173,7 +173,7 @@
     };
     playerLayer.addEventListener("contextmenu", movePlayer, false);
     draw_beings = function() {
-      var nearby_buckets, unit, _i, _len;
+      var i, unit, _i, _j, _len, _len2, _ref;
       console.log('drawing beings');
       ctx_e.clearRect(0, 0, canvas_width, canvas_height);
       frame += 1;
@@ -181,7 +181,11 @@
       console.log('updatd buckets');
       for (_i = 0, _len = all_units.length; _i < _len; _i++) {
         unit = all_units[_i];
-        nearby_buckets = get_buckets(unit);
+        _ref = unit.buckets;
+        for (_j = 0, _len2 = _ref.length; _j < _len2; _j++) {
+          i = _ref[_j];
+          check_collision(unit, i);
+        }
         unit.move();
         ctx_e.beginPath();
         ctx_e.arc(unit.x, unit.y, radius, 0, Math.PI * 2, true);
@@ -196,11 +200,28 @@
       ctx_p.closePath();
       return ctx_p.fill();
     };
-    return setInterval(draw_beings, 100);
+    return setInterval(draw_beings, 500);
   };
   num_buckets_across = 4;
   num_buckets = num_buckets_across * num_buckets_across;
   bucket_width = canvas_width / num_buckets_across;
+  check_collision = function(unit, i) {
+    var distance, other, other_units, _i, _len, _results;
+    other_units = root.buckets[i.toString()];
+    _results = [];
+    for (_i = 0, _len = other_units.length; _i < _len; _i++) {
+      other = other_units[_i];
+      distance = check_distance(unit, other);
+      _results.push(distance < 2 * unit_radius ? console.log('collision!') : void 0);
+    }
+    return _results;
+  };
+  check_distance = function(unit1, unit2) {
+    var delta_x, delta_y;
+    delta_x = unit1.x - unit2.x;
+    delta_y = unit1.y - unit2.y;
+    return Math.sqrt(delta_x * delta_x + delta_y * delta_y);
+  };
   update_buckets = function() {
     var i, unit, _i, _len, _ref, _results;
     root.buckets = {};
