@@ -19,7 +19,7 @@
   player_color = "blue";
   canvas_width = 300;
   canvas_height = 300;
-  num_units = 4;
+  num_units = 10;
   unit_radius = 5;
   all_units = [];
   ctx_bg = background.getContext("2d");
@@ -29,68 +29,14 @@
   ctx_bg.fill();
   ctx_p = playerLayer.getContext("2d");
   ctx_e = enemyLayer.getContext("2d");
-  Player = (function() {
-    function Player(x, y, next_x, next_y, frame) {
-      this.x = x;
-      this.y = y;
-      this.next_x = next_x != null ? next_x : this.x;
-      this.next_y = next_y != null ? next_y : this.y;
-      this.frame = frame != null ? frame : 0;
-    }
-    Player.prototype.animate = function() {
-      var self;
-      console.log('animating');
-      self = this;
-      return setInterval(function() {
-        return self.move();
-      }, 50);
-    };
-    Player.prototype.move = function() {
-      var delta_x, delta_y, distance, theta, x_inc, y_inc;
-      delta_y = this.y - this.next_y;
-      delta_x = this.x - this.next_x;
-      distance = Math.sqrt(delta_y * delta_y + delta_x * delta_x);
-      if (distance !== 0) {
-        if (player_speed > distance) {
-          this.x = this.next_x;
-          this.y = this.next_y;
-        } else {
-          theta = Math.acos((this.next_x - this.x) / distance);
-          x_inc = player_speed * Math.cos(theta);
-          y_inc = player_speed * Math.sin(theta);
-          this.x += x_inc;
-          if (this.next_y > this.y) {
-            this.y += y_inc;
-          } else {
-            this.y -= y_inc;
-          }
-        }
-      }
-      this.frame += 1;
-      return this.draw();
-    };
-    Player.prototype.draw = function() {
-      var radius;
-      console.log('drawing');
-      ctx_p.clearRect(0, 0, canvas_width, canvas_height);
-      ctx_p.beginPath();
-      radius = 5;
-      ctx_p.fillStyle = player_color;
-      ctx_p.arc(this.x, this.y, radius, 0, Math.PI * 2, true);
-      ctx_p.closePath();
-      ctx_p.fill();
-      return this.frame += 1;
-    };
-    return Player;
-  })();
   Being = (function() {
     function Being(x, y, speed) {
       this.x = x;
       this.y = y;
       this.speed = speed != null ? speed : 2;
+      this.frame = 0;
       this.next_x = this.x;
       this.next_y = this.y;
-      this.frame = 0;
     }
     Being.prototype.move = function() {
       var delta_x, delta_y, distance, theta, x_inc, y_inc;
@@ -100,23 +46,47 @@
       if (distance !== 0) {
         if (this.speed > distance) {
           this.x = this.next_x;
-          return this.y = this.next_y;
+          this.y = this.next_y;
         } else {
           theta = Math.acos((this.next_x - this.x) / distance);
           x_inc = this.speed * Math.cos(theta);
           y_inc = this.speed * Math.sin(theta);
           this.x += x_inc;
           if (this.next_y > this.y) {
-            return this.y += y_inc;
+            this.y += y_inc;
           } else {
-            return this.y -= y_inc;
+            this.y -= y_inc;
           }
         }
       }
+      return distance;
     };
     return Being;
   })();
-  root.player = new Being(55, 59, 4);
+  Player = (function() {
+    __extends(Player, Being);
+    function Player() {
+      Player.__super__.constructor.apply(this, arguments);
+      this.x_route = [this.x];
+      this.y_route = [this.y];
+      console.log('constructed player');
+    }
+    Player.prototype.move = function() {
+      var distance;
+      this.next_x = this.x_route[0];
+      this.next_y = this.y_route[0];
+      console.log('set players next coordinates');
+      distance = Player.__super__.move.apply(this, arguments);
+      if (distance === 0 && this.x_route.length > 1) {
+        console.log('players distance is 0');
+        this.x_route.shift();
+        this.y_route.shift();
+        return console.log('popped off route');
+      }
+    };
+    return Player;
+  })();
+  root.player = new Player(55, 59, 4);
   Enemy = (function() {
     __extends(Enemy, Being);
     function Enemy() {
@@ -187,12 +157,18 @@
       x -= playerLayer.offsetLeft;
       y -= playerLayer.offsetTop;
       console.log('click: x:' + x + ', y:' + y);
-      root.player.next_x = x;
-      return root.player.next_y = y;
+      if (e.shiftKey) {
+        root.player.x_route.push(x);
+        return root.player.y_route.push(y);
+      } else {
+        root.player.x_route = [x];
+        return root.player.y_route = [y];
+      }
     };
     playerLayer.addEventListener("contextmenu", movePlayer, false);
     draw_beings = function() {
       var unit, _i, _len;
+      console.log('drawing beings');
       ctx_e.clearRect(0, 0, canvas_width, canvas_height);
       frame += 1;
       for (_i = 0, _len = all_units.length; _i < _len; _i++) {

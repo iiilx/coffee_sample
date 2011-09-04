@@ -14,7 +14,7 @@ player_color = "blue"
 canvas_width = 300
 canvas_height = 300
 
-num_units = 4 
+num_units = 10 
 unit_radius = 5
 
 all_units=[]
@@ -28,66 +28,11 @@ ctx_bg.fill()
 ctx_p = playerLayer.getContext("2d")
 ctx_e = enemyLayer.getContext("2d")
 
-class Player
-    constructor: (@x,@y,@next_x=@x, @next_y=@y, @frame=0) ->
-    animate : ->
-        console.log('animating')
-        self = @
-        setInterval(
-            ->
-                self.move()
-            50
-        )
-    move : ->
-        #console.log('moving')
-        #console.log('current: x:' + @x + ', y:' + @y)
-        #console.log('next_x:'+@next_x + ', next_y:'+@next_y)
-        delta_y = @y - @next_y
-        delta_x = @x - @next_x
-        #console.log('dx:'+delta_x)
-        #console.log('dy:'+delta_y)
-        distance = Math.sqrt(delta_y * delta_y + delta_x * delta_x)
-        if distance != 0
-            #console.log('distnace != 0')
-            if player_speed > distance
-                @x = @next_x
-                @y = @next_y
-            else
-                #calculate angle
-                theta = Math.acos((@next_x - @x) / distance)
-                #console.log('theta:' + theta)
-                x_inc = player_speed * Math.cos(theta)
-                y_inc = player_speed * Math.sin(theta)
-                
-                @x += x_inc
-                if @next_y > @y
-                    @y += y_inc
-                else
-                    @y -= y_inc
-                #console.log('x_inc:' + x_inc + '. y_inc:' + y_inc)
-        #console.log('next: x:' + @x + ', y:' + @y)
-        @frame += 1
-        @draw()
-    draw : ->
-        console.log('drawing')
-        ctx_p.clearRect(0, 0, canvas_width, canvas_height)
-        ctx_p.beginPath()
-        radius = 5
-        ctx_p.fillStyle = player_color 
-        ctx_p.arc(@x, @y, radius, 0, Math.PI*2, true)
-        ctx_p.closePath()
-        ctx_p.fill()
-        @frame += 1
-
-#player = new Player(25,25)
-#player.animate()
-
-
 class Being
     constructor: (@x, @y, @speed=2) ->
+        @frame = 0
         @next_x = @x
         @next_y = @y
-        @frame = 0
     move : ->
         #console.log('moving')
         #console.log('current: x:' + @x + ', y:' + @y)
@@ -114,11 +59,30 @@ class Being
                     @y += y_inc
                 else
                     @y -= y_inc
+        return distance
+        
 
-root.player = new Being(55, 59, 4)
+class Player extends Being
+    constructor: ->
+        super
+        @x_route = [@x]
+        @y_route = [@y]
+        console.log('constructed player')
+    move : ->
+        @next_x = @x_route[0]
+        @next_y = @y_route[0]
+        console.log('set players next coordinates') 
+        distance = super
+        if distance == 0 and @x_route.length > 1
+            console.log('players distance is 0')
+            @x_route.shift()
+            @y_route.shift()
+            console.log('popped off route')
+
+root.player = new Player(55, 59, 4)
 
 class Enemy extends Being
-    move :->
+    move : ->
         @next_x = root.player.x
         @next_y = root.player.y
         super
@@ -184,21 +148,26 @@ construct_units = ->
         x -= playerLayer.offsetLeft
         y -= playerLayer.offsetTop
         console.log('click: x:' + x + ', y:' + y)
-        root.player.next_x = x
-        root.player.next_y = y
+        if e.shiftKey
+            root.player.x_route.push(x)
+            root.player.y_route.push(y)
+        else
+            root.player.x_route = [x]
+            root.player.y_route = [y]
     playerLayer.addEventListener("contextmenu", movePlayer, false)
     draw_beings = ->
+        console.log('drawing beings')
         ctx_e.clearRect(0, 0, canvas_width, canvas_height)
         frame += 1
         for unit in all_units
-            unit.move()
+            unit.move() #finds next x and y coordinates for the unit
             ctx_e.beginPath()
             ctx_e.arc(unit.x, unit.y, radius, 0, Math.PI*2, true)
             ctx_e.closePath()
             ctx_e.fill()
-        root.player.move()
+        root.player.move() #finds next x and y coords for player
         ctx_p.clearRect(0, 0, canvas_width, canvas_height)
-        ctx_p.fillStyle = player_color 
+        ctx_p.fillStyle = player_color
         ctx_p.beginPath()
         ctx_p.arc(root.player.x, root.player.y, radius, 0, Math.PI*2, true)
         ctx_p.closePath()
