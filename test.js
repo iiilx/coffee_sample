@@ -1,5 +1,5 @@
 (function() {
-  var Being, Enemy, Player, all_units, background, canvas_height, canvas_width, construct_units, ctx_bg, ctx_e, ctx_p, enemyLayer, enemy_color, enemy_speed, find_spot, num_units, playerLayer, player_color, player_speed, root, start, unit_radius;
+  var Being, Enemy, Player, all_units, background, bucket_width, canvas_height, canvas_width, construct_units, ctx_bg, ctx_e, ctx_p, enemyLayer, enemy_color, enemy_speed, find_spot, get_buckets, num_buckets, num_buckets_across, num_units, playerLayer, player_color, player_speed, register, root, start, unit_radius, update_buckets;
   var __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
     for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; }
     function ctor() { this.constructor = child; }
@@ -7,6 +7,11 @@
     child.prototype = new ctor;
     child.__super__ = parent.prototype;
     return child;
+  }, __indexOf = Array.prototype.indexOf || function(item) {
+    for (var i = 0, l = this.length; i < l; i++) {
+      if (this[i] === item) return i;
+    }
+    return -1;
   };
   root = typeof exports !== "undefined" && exports !== null ? exports : this;
   background = document.getElementById("layer1");
@@ -19,7 +24,7 @@
   player_color = "blue";
   canvas_width = 300;
   canvas_height = 300;
-  num_units = 10;
+  num_units = 15;
   unit_radius = 5;
   all_units = [];
   ctx_bg = background.getContext("2d");
@@ -37,6 +42,7 @@
       this.frame = 0;
       this.next_x = this.x;
       this.next_y = this.y;
+      this.buckets = [];
     }
     Being.prototype.move = function() {
       var delta_x, delta_y, distance, theta, x_inc, y_inc;
@@ -103,7 +109,7 @@
     var count, delta, delta_x, delta_y, generate_spot, spot, unit, x, y, _i, _len;
     console.log('finding spot');
     generate_spot = function() {
-      return [Math.random() * 300, Math.random() * 300];
+      return [Math.random() * (canvas_width - 2 * unit_radius), Math.random() * (canvas_height - 2 * unit_radius)];
     };
     x = 0;
     y = 0;
@@ -142,7 +148,7 @@
       all_units.push(unit);
     }
     frame = 0;
-    radius = 5;
+    radius = unit_radius;
     ctx_e.fillStyle = enemy_color;
     movePlayer = function(e) {
       var x, y;
@@ -167,12 +173,15 @@
     };
     playerLayer.addEventListener("contextmenu", movePlayer, false);
     draw_beings = function() {
-      var unit, _i, _len;
+      var nearby_buckets, unit, _i, _len;
       console.log('drawing beings');
       ctx_e.clearRect(0, 0, canvas_width, canvas_height);
       frame += 1;
+      update_buckets();
+      console.log('updatd buckets');
       for (_i = 0, _len = all_units.length; _i < _len; _i++) {
         unit = all_units[_i];
+        nearby_buckets = get_buckets(unit);
         unit.move();
         ctx_e.beginPath();
         ctx_e.arc(unit.x, unit.y, radius, 0, Math.PI * 2, true);
@@ -187,7 +196,61 @@
       ctx_p.closePath();
       return ctx_p.fill();
     };
-    return setInterval(draw_beings, 50);
+    return setInterval(draw_beings, 100);
+  };
+  num_buckets_across = 4;
+  num_buckets = num_buckets_across * num_buckets_across;
+  bucket_width = canvas_width / num_buckets_across;
+  update_buckets = function() {
+    var i, unit, _i, _len, _ref, _results;
+    root.buckets = {};
+    for (i = 0, _ref = num_buckets - 1; 0 <= _ref ? i <= _ref : i >= _ref; 0 <= _ref ? i++ : i--) {
+      root.buckets[i.toString()] = [];
+    }
+    console.log('root.buckets: ' + root.buckets);
+    console.log('all_units:' + all_units);
+    _results = [];
+    for (_i = 0, _len = all_units.length; _i < _len; _i++) {
+      unit = all_units[_i];
+      register(unit);
+      _results.push(console.log('registered unit'));
+    }
+    return _results;
+  };
+  register = function(unit) {
+    var bucket_ids, id, _i, _len, _results;
+    bucket_ids = get_buckets(unit);
+    console.log('bucket ids: ' + bucket_ids);
+    unit.buckets = bucket_ids;
+    _results = [];
+    for (_i = 0, _len = bucket_ids.length; _i < _len; _i++) {
+      id = bucket_ids[_i];
+      console.log('attempting to push unit to bucket ' + id);
+      root.buckets[id.toString()].push(unit);
+      _results.push(console.log('pushed unit to bucket ' + id));
+    }
+    return _results;
+  };
+  get_buckets = function(unit) {
+    var add_bucket, bux, max_x, max_y, min_x, min_y;
+    bux = [];
+    min_x = unit.x - unit_radius;
+    max_x = unit.x + unit_radius;
+    min_y = unit.y - unit_radius;
+    max_y = unit.y + unit_radius;
+    add_bucket = function(x, y) {
+      var bucket_id;
+      bucket_id = Math.floor(x / bucket_width) + Math.floor(y / bucket_width) * num_buckets_across;
+      if (__indexOf.call(bux, bucket_id) < 0) {
+        console.log('pushing bucket ' + bucket_id);
+        return bux.push(bucket_id);
+      }
+    };
+    add_bucket(min_x, min_y);
+    add_bucket(min_x, max_y);
+    add_bucket(max_x, min_y);
+    add_bucket(max_x, max_y);
+    return bux;
   };
   construct_units();
 }).call(this);

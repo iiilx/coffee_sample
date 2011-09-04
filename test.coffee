@@ -14,7 +14,7 @@ player_color = "blue"
 canvas_width = 300
 canvas_height = 300
 
-num_units = 10 
+num_units = 15 
 unit_radius = 5
 
 all_units=[]
@@ -33,14 +33,10 @@ class Being
         @frame = 0
         @next_x = @x
         @next_y = @y
+        @buckets = []
     move : ->
-        #console.log('moving')
-        #console.log('current: x:' + @x + ', y:' + @y)
-        #console.log('next_x:'+@next_x + ', next_y:'+@next_y)
         delta_y = @y - @next_y
         delta_x = @x - @next_x
-        #console.log('dx:'+delta_x)
-        #console.log('dy:'+delta_y)
         distance = Math.sqrt(delta_y * delta_y + delta_x * delta_x)
         if distance != 0
             #console.log('distnace != 0')
@@ -93,7 +89,7 @@ find_spot = ->
     #by picking a spot and 
     console.log('finding spot')
     generate_spot = ->
-        return [Math.random()*300, Math.random()*300]
+        return [Math.random()*(canvas_width - 2 * unit_radius), Math.random()*(canvas_height - 2 * unit_radius)]
     x=0
     y=0
     while true 
@@ -134,7 +130,7 @@ construct_units = ->
     #alert('created enemies')
     #spot = find_spot()
     frame = 0
-    radius = 5
+    radius = unit_radius 
     ctx_e.fillStyle = enemy_color
     # need a function that animates every being. in a setTimeout function, draw every units current position.
     movePlayer = (e) ->
@@ -159,7 +155,15 @@ construct_units = ->
         console.log('drawing beings')
         ctx_e.clearRect(0, 0, canvas_width, canvas_height)
         frame += 1
+        update_buckets()
+        console.log('updatd buckets')
+            #register unit into all buckets it's in
+            #calculate the corners of each unit and then calculate which buckets eachunit is in
+            #set buckets[bucket_id].push(unit)  {1:[unit1, unit4], 2:[unit2, unit5], 3:[unit3]}
+            #
         for unit in all_units
+            nearby_buckets = get_buckets(unit)
+            
             unit.move() #finds next x and y coordinates for the unit
             ctx_e.beginPath()
             ctx_e.arc(unit.x, unit.y, radius, 0, Math.PI*2, true)
@@ -172,7 +176,46 @@ construct_units = ->
         ctx_p.arc(root.player.x, root.player.y, radius, 0, Math.PI*2, true)
         ctx_p.closePath()
         ctx_p.fill()
-    setInterval(draw_beings, 50)
+    setInterval(draw_beings, 100)
+
+num_buckets_across = 4
+num_buckets = num_buckets_across * num_buckets_across
+bucket_width = canvas_width / num_buckets_across
+
+update_buckets = ->
+    root.buckets = {}
+    for i in [0..num_buckets-1]
+        root.buckets[i.toString()] = []
+    console.log('root.buckets: '+root.buckets)
+    console.log('all_units:' + all_units)
+    for unit in all_units
+        register(unit)
+        console.log('registered unit')
+
+register = (unit) ->
+    bucket_ids = get_buckets(unit)
+    console.log('bucket ids: '+bucket_ids)
+    unit.buckets = bucket_ids
+    for id in bucket_ids
+        console.log('attempting to push unit to bucket ' + id)
+        root.buckets[id.toString()].push(unit)
+        console.log('pushed unit to bucket ' + id)
+
+get_buckets = (unit) ->
+    bux = []
+    min_x = unit.x - unit_radius
+    max_x = unit.x + unit_radius
+    min_y = unit.y - unit_radius
+    max_y = unit.y + unit_radius
+    add_bucket = (x,y) ->
+        bucket_id = Math.floor(x / bucket_width) + Math.floor(y / bucket_width) * num_buckets_across
+        if bucket_id not in bux
+            console.log('pushing bucket ' + bucket_id)
+            bux.push(bucket_id)
+    add_bucket(min_x, min_y)
+    add_bucket(min_x, max_y)
+    add_bucket(max_x, min_y)
+    add_bucket(max_x, max_y)
+    return bux
 
 construct_units()
-#setInterval(construct_units, 500)
