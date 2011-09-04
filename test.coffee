@@ -3,11 +3,16 @@ enemyLayer = document.getElementById("layer2")
 playerLayer = document.getElementById("layer3")
 
 start = 20
-rate = 2
+player_speed = 4
+enemy_speed = 2
+
+enemy_color = "red"
+player_color = "blue"
+
 canvas_width = 300
 canvas_height = 300
 
-num_units = 15
+num_units = 15 
 unit_radius = 5
 
 all_units=[]
@@ -18,7 +23,8 @@ ctx_bg.rect(0,0,canvas_width,canvas_height)
 ctx_bg.fillStyle = "black"
 ctx_bg.fill()
 
-ctx_p = background.getContext("2d")
+ctx_p = playerLayer.getContext("2d")
+ctx_e = enemyLayer.getContext("2d")
 
 class Player
     constructor: (@x,@y,@next_x=@x, @next_y=@y, @frame=0) ->
@@ -41,15 +47,15 @@ class Player
         distance = Math.sqrt(delta_y * delta_y + delta_x * delta_x)
         if distance != 0
             #console.log('distnace != 0')
-            if rate > distance
+            if player_speed > distance
                 @x = @next_x
                 @y = @next_y
             else
                 #calculate angle
                 theta = Math.acos((@next_x - @x) / distance)
                 #console.log('theta:' + theta)
-                x_inc = rate * Math.cos(theta)
-                y_inc = rate * Math.sin(theta)
+                x_inc = player_speed * Math.cos(theta)
+                y_inc = player_speed * Math.sin(theta)
                 
                 @x += x_inc
                 if @next_y > @y
@@ -62,11 +68,10 @@ class Player
         @draw()
     draw : ->
         console.log('drawing')
-        ctx_p = playerLayer.getContext("2d")
         ctx_p.clearRect(0, 0, canvas_width, canvas_height)
         ctx_p.beginPath()
         radius = 5
-        ctx_p.fillStyle = 'blue'
+        ctx_p.fillStyle = player_color 
         ctx_p.arc(@x, @y, radius, 0, Math.PI*2, true)
         ctx_p.closePath()
         ctx_p.fill()
@@ -92,62 +97,42 @@ movePlayer = (e) ->
 
 playerLayer.addEventListener("contextmenu", movePlayer, false)
 
-class Enemy
-    constructor: (@x, @y) ->
-    frame : 0
-    move : ->
+class Being
+    constructor: (@x, @y, @ctx, @next_x=@x, @next_y=@y, @frame=0, @color='red') ->
+    animate : ->
+        console.log('animating')
         self = @
         setInterval(
             ->
-                self.draw()
+                self.move()
             50
         )
-    draw : ->
-        @x += 2
-        ctx_e = enemyLayer.getContext("2d")
-        ctx_e.clearRect(0, 0, canvas_width, canvas_height)
-        ctx_e.beginPath()
-        radius = 5
-        ctx_e.fillStyle = 'blue'
-        ctx_e.arc(@x, @y, radius, 0, Math.PI*2, true)
-        ctx_e.closePath()
-        ctx_e.fill()
-        @frame += 1
-
-#enemy = new Enemy(5,5)
-#enemy.move()
-#setInterval(
-#    ->
-#        enemy.move()
-#        console.log('moved')
-#    50
-#)
-
-class Unit
-    constructor: (@x, @y) ->
-    move: (meters=5) ->
-        alert 'moving'
-
-    flash_circle: ->
-        console.log('flashing')
-        frame=0
-        x=@x
-        y=@y
-        draw_circle = (x, y, radius=unit_radius) ->
-            console.log('drawing circle at frame '+ frame)
-            ctx_e = enemyLayer.getContext("2d")
-            ctx_e.beginPath()
-            ctx_e.fillStyle = 'red'
-            ctx_e.arc(x, y, radius, 0, Math.PI*2, true)
-            ctx_e.closePath()
-            ctx_e.fill()
-            frame += 1 
-        setInterval(
-            ->
-                console.log(x+', ' + y)
-                draw_circle(x,y)
-            1000
-        )
+    move : ->
+        #console.log('moving')
+        #console.log('current: x:' + @x + ', y:' + @y)
+        #console.log('next_x:'+@next_x + ', next_y:'+@next_y)
+        delta_y = @y - @next_y
+        delta_x = @x - @next_x
+        #console.log('dx:'+delta_x)
+        #console.log('dy:'+delta_y)
+        distance = Math.sqrt(delta_y * delta_y + delta_x * delta_x)
+        if distance != 0
+            #console.log('distnace != 0')
+            if enemy_speed > distance
+                @x = @next_x
+                @y = @next_y
+            else
+                #calculate angle
+                theta = Math.acos((@next_x - @x) / distance)
+                #console.log('theta:' + theta)
+                x_inc = enemy_speed * Math.cos(theta)
+                y_inc = enemy_speed * Math.sin(theta)
+                
+                @x += x_inc
+                if @next_y > @y
+                    @y += y_inc
+                else
+                    @y -= y_inc
 
 find_spot = ->
     #given a series of x,y coordinates, find an open spot
@@ -183,12 +168,26 @@ find_spot = ->
     return [x,y]
     # does x in the while get assigned to x here?
 
+        
 construct_units = ->
     for i in [1..num_units]
         spot = find_spot()
-        unit = new Unit spot[0], spot[1]
-        unit.flash_circle()
+        unit = new Being(spot[0], spot[1], ctx_e)
+        unit.animate()
         all_units.push(unit)
+    frame = 0
+    radius = 5
+    ctx_e.fillStyle = enemy_color 
+    # need a function that animates every being. in a setTimeout function, draw every units current position.
+    draw_beings = ->
+        ctx_e.clearRect(0, 0, canvas_width, canvas_height)
+        frame += 1
+        for unit in all_units
+            ctx_e.beginPath()
+            ctx_e.arc(unit.x, unit.y, radius, 0, Math.PI*2, true)
+            ctx_e.closePath()
+            ctx_e.fill()
+    setInterval(draw_beings, 50)
 
 construct_units()
 #setInterval(construct_units, 500)
