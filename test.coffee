@@ -78,6 +78,9 @@ class Player extends Being
 root.player = new Player(55, 59, 4)
 
 class Enemy extends Being
+    constructor: ->
+        super
+        @stop = false
     move : ->
         @next_x = root.player.x
         @next_y = root.player.y
@@ -160,10 +163,15 @@ construct_units = ->
             #register unit into all buckets it's in
             #calculate the corners of each unit and then calculate which buckets eachunit is in
             #set buckets[bucket_id].push(unit)  {1:[unit1, unit4], 2:[unit2, unit5], 3:[unit3]}
+        collision = false
         for unit in all_units
             for i in unit.buckets
-                check_collision(unit, i)
-            unit.move() #finds next x and y coordinates for the unit
+                collision = check_collision(unit, i)
+                console.log('collision detected')
+                if collision
+                    break
+            if not collision
+                unit.move() #finds next x and y coordinates for the unit
             ctx_e.beginPath()
             ctx_e.arc(unit.x, unit.y, radius, 0, Math.PI*2, true)
             ctx_e.closePath()
@@ -175,7 +183,7 @@ construct_units = ->
         ctx_p.arc(root.player.x, root.player.y, radius, 0, Math.PI*2, true)
         ctx_p.closePath()
         ctx_p.fill()
-    setInterval(draw_beings, 500)
+    setInterval(draw_beings, 50)
 
 num_buckets_across = 4
 num_buckets = num_buckets_across * num_buckets_across
@@ -183,12 +191,25 @@ bucket_width = canvas_width / num_buckets_across
 
 check_collision = (unit, i) ->
     other_units = root.buckets[i.toString()]
+    console.log(unit)
+    console.log(other_units)
     for other in other_units
+        console.log(other)
+        if other == unit
+            continue
         distance = check_distance(unit, other)
+        console.log('distance:' + distance)
         if distance < 2 * unit_radius
             console.log('collision!')
+            return true
+    return false
+            # DEAL WITH BOTH UNITS OR JUST ONE? GIVE THE OTHER UNIT SOME MOMENTUM/PUSH?
 
 check_distance = (unit1, unit2) ->
+    if unit1 == unit2
+        console.log('same not good')
+    console.log('unit1:' + unit1.x+','+unit1.y)
+    console.log('unit2:' + unit2.x + ',' + unit2.y)
     delta_x = unit1.x - unit2.x
     delta_y = unit1.y - unit2.y
     return Math.sqrt(delta_x * delta_x + delta_y * delta_y)

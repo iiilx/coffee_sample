@@ -97,6 +97,7 @@
     __extends(Enemy, Being);
     function Enemy() {
       Enemy.__super__.constructor.apply(this, arguments);
+      this.stop = false;
     }
     Enemy.prototype.move = function() {
       this.next_x = root.player.x;
@@ -173,20 +174,27 @@
     };
     playerLayer.addEventListener("contextmenu", movePlayer, false);
     draw_beings = function() {
-      var i, unit, _i, _j, _len, _len2, _ref;
+      var collision, i, unit, _i, _j, _len, _len2, _ref;
       console.log('drawing beings');
       ctx_e.clearRect(0, 0, canvas_width, canvas_height);
       frame += 1;
       update_buckets();
       console.log('updatd buckets');
+      collision = false;
       for (_i = 0, _len = all_units.length; _i < _len; _i++) {
         unit = all_units[_i];
         _ref = unit.buckets;
         for (_j = 0, _len2 = _ref.length; _j < _len2; _j++) {
           i = _ref[_j];
-          check_collision(unit, i);
+          collision = check_collision(unit, i);
+          console.log('collision detected');
+          if (collision) {
+            break;
+          }
         }
-        unit.move();
+        if (!collision) {
+          unit.move();
+        }
         ctx_e.beginPath();
         ctx_e.arc(unit.x, unit.y, radius, 0, Math.PI * 2, true);
         ctx_e.closePath();
@@ -200,24 +208,38 @@
       ctx_p.closePath();
       return ctx_p.fill();
     };
-    return setInterval(draw_beings, 500);
+    return setInterval(draw_beings, 50);
   };
   num_buckets_across = 4;
   num_buckets = num_buckets_across * num_buckets_across;
   bucket_width = canvas_width / num_buckets_across;
   check_collision = function(unit, i) {
-    var distance, other, other_units, _i, _len, _results;
+    var distance, other, other_units, _i, _len;
     other_units = root.buckets[i.toString()];
-    _results = [];
+    console.log(unit);
+    console.log(other_units);
     for (_i = 0, _len = other_units.length; _i < _len; _i++) {
       other = other_units[_i];
+      console.log(other);
+      if (other === unit) {
+        continue;
+      }
       distance = check_distance(unit, other);
-      _results.push(distance < 2 * unit_radius ? console.log('collision!') : void 0);
+      console.log('distance:' + distance);
+      if (distance < 2 * unit_radius) {
+        console.log('collision!');
+        return true;
+      }
     }
-    return _results;
+    return false;
   };
   check_distance = function(unit1, unit2) {
     var delta_x, delta_y;
+    if (unit1 === unit2) {
+      console.log('same not good');
+    }
+    console.log('unit1:' + unit1.x + ',' + unit1.y);
+    console.log('unit2:' + unit2.x + ',' + unit2.y);
     delta_x = unit1.x - unit2.x;
     delta_y = unit1.y - unit2.y;
     return Math.sqrt(delta_x * delta_x + delta_y * delta_y);
