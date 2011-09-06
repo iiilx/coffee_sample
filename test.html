@@ -11,6 +11,18 @@
     <canvas id="layer2" width="300" height="300" style="position: absolute; left: 0; top: 0; z-index: 1;"></canvas>
     <canvas id="layer3" width="300" height="300" style="position: absolute; left: 0; top: 0; z-index: 2;"></canvas>
 </div>
+<script>
+Array.prototype.remove= function(){
+    var what, a= arguments, L= a.length, ax;
+    while(L && this.length){
+        what= a[--L];
+        while((ax= this.indexOf(what))!= -1){
+            this.splice(ax, 1);
+        }
+    }
+    return this;
+}
+</script>
 <script type="text/javascript" src="test.js"></script>    
 </body>
 </html>
