@@ -24,7 +24,7 @@
   player_color = "blue";
   canvas_width = 300;
   canvas_height = 300;
-  num_units = 5;
+  num_units = 10;
   unit_radius = 5;
   all_units = [];
   ctx_bg = background.getContext("2d");
@@ -99,10 +99,8 @@
       this.stop = false;
     }
     Enemy.prototype.move = function() {
-      if (!this.bounce) {
-        this.next_x = root.player.x;
-        this.next_y = root.player.y;
-      }
+      this.next_x = root.player.x;
+      this.next_y = root.player.y;
       return Enemy.__super__.move.apply(this, arguments);
     };
     return Enemy;
@@ -196,7 +194,7 @@
               continue;
             }
             distance = check_distance(unit, other);
-            if (distance < 2 * unit_radius) {
+            if (distance < 3 * unit_radius) {
               console.log('collision!');
               collision_list.push(other);
             }
@@ -336,7 +334,7 @@
       }
       distance = check_distance(unit, other);
       console.log('distance:' + distance);
-      if (distance < 2 * unit_radius) {
+      if (distance < 3 * unit_radius) {
         console.log('collision!');
         return true;
       }

@@ -14,7 +14,7 @@ player_color = "blue"
 canvas_width = 300
 canvas_height = 300
 
-num_units = 5 
+num_units = 10 
 unit_radius = 5
 
 all_units=[]
@@ -84,9 +84,8 @@ class Enemy extends Being
         @distance = 0
         @stop = false
     move : ->
-        if not @bounce
-            @next_x = root.player.x
-            @next_y = root.player.y
+        @next_x = root.player.x
+        @next_y = root.player.y
         super
 
 find_spot = ->
@@ -136,7 +135,7 @@ construct_units = ->
     #alert('created enemies')
     #spot = find_spot()
     frame = 0
-    radius = unit_radius 
+    radius = unit_radius
     ctx_e.fillStyle = enemy_color
     # need a function that animates every being. in a setTimeout function, draw every units current position.
     movePlayer = (e) ->
@@ -169,9 +168,6 @@ construct_units = ->
         collision = false
         was_collision = false
         #if there's a collision, don't move current unit break out of all_units for loop and move all other units. 
-        #
-        stopped = [] # store a list of stopped units to compare with
-        moving = [] # store a list of objects to be moved
         collision_groups = [] #[ [u1,u2,u3], [u4,u5], [u6,u7] ]  or [ {u1:u1, }, {}, {}]
         for unit in all_units # for each unit, find colliding units. if there are collisions and if the unit is in one of the lists, add the colliding units to it. if any of the colliding units are in it, add the unit and rest of the colliding units to it. if there are no colliding units, dont add anything.
             unit.distance = check_distance(unit, root.player)
@@ -184,7 +180,7 @@ construct_units = ->
                         continue
                     distance = check_distance(unit, other)
                     #console.log('distance:' + distance)
-                    if distance < 2 * unit_radius
+                    if distance < 3 * unit_radius
                         console.log('collision!')
                         collision_list.push(other)
             unit.collision_list = collision_list
@@ -317,7 +313,7 @@ check_collision = (unit, i) ->
             continue
         distance = check_distance(unit, other)
         console.log('distance:' + distance)
-        if distance < 2 * unit_radius
+        if distance < 3 * unit_radius
             console.log('collision!')
             return true
     return false
